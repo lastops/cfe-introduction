@@ -1,0 +1,30 @@
+# Policy entry point
+
+body file control
+# Define namespace
+# List inputs
+{
+    namespace => 'lastops';
+    inputs => {
+        '${sys.inputdir}/lastops/packages.cf',
+        '${sys.inputdir}/lastops/ssh.cf',
+        '${sys.inputdir}/lastops/users.cf',
+    };
+}
+
+bundle common commons
+# Defines namespace-wide classes
+{
+    classes:
+        'best_text_editor' expression => classmatch('c1.*');
+        'second_best_text_editor' expression => classmatch('c2.*');
+}
+
+bundle agent main
+# Entry point promise
+{
+    methods:
+        # 'install_base_packages' usebundle => 'install_base_packages';
+        # 'setup_openssh' usebundle => 'setup_openssh';
+        # 'add_users' usebundle => 'add_users';
+}

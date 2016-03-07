@@ -1,0 +1,19 @@
+###############################################################################
+#
+# bundle agent main
+#  - User/Site policy entry
+#
+###############################################################################
+
+body file control {
+    inputs => {
+        '${sys.inputdir}/lastops/main.cf',
+    };
+}
+
+bundle agent main
+# User Defined Service Catalogue
+{
+  methods:
+    'lastops_entry_point' usebundle => 'lastops:main';
+}

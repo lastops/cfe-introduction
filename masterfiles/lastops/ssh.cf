@@ -1,0 +1,49 @@
+# OpenSSH setup
+body file control
+# Define namespace
+{
+    namespace => 'lastops';
+}
+
+bundle agent setup_openssh
+# Set OpenSSH settings
+{
+    vars:
+        'sshd_config_file' string => '/etc/ssh/sshd_config';
+        'ssh_service_name' string => 'ssh';
+
+        'sshd_config[Port]' string => '23456';
+        'sshd_config[UseDNS]' string => 'no';
+        'sshd_config[Protocol]' string => '2';
+        'sshd_config[PermitRootLogin]' string => 'prohibit-password';
+
+    methods:
+        'handle_ssh' usebundle => 'handle_ssh';
+
+}
+
+bundle agent handle_ssh
+# Edit OpenSSH config and restart if needed
+{
+    files:
+        '${setup_openssh.sshd_config_file}'
+            changes => default:detect_all_change(),
+            classes => default:classes_generic('sshd_config_changes');
+
+        sshd_config_changes_repaired::
+            '${setup_openssh.sshd_config_file}'
+                create => 'true',
+                # set_line_based(v, sep, bp, kp, cp)
+                # v The fully-qualified name of an associative array containing `v[LHS]="rhs"`
+                # sep The separator to insert, e.g. ` ` for space-separated
+                # bp The key-value separation regex, e.g. `\s+` for space-separated
+                # kp The keys to select from v, use `.*` for all
+                # cp The comment pattern from line-start, e.g. `\s*#\s*`
+                edit_line => default:set_line_based('lastops:setup_openssh.sshd_config', ' ', '\s+', '.*', '\s*#\s*'),
+                classes => default:classes_generic('sshd_config');
+
+    methods:
+        sshd_config_repaired::
+            'restart_sshd' usebundle => default:standard_services('${setup_openssh.ssh_service_name}', 'restart');
+
+}

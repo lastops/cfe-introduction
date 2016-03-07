@@ -1,0 +1,46 @@
+# Package-related promises
+body file control
+# Define namespace
+{
+    namespace => 'lastops';
+}
+
+bundle agent install_base_packages
+# Install base packages according to server designation
+{
+    vars:
+        any::
+            'base_packages' slist => {
+                'openssh-server',
+                'sudo',
+            };
+
+            'additional_packages' slist => {
+            };
+
+        best_text_editor::
+            'additional_packages' slist => {
+                'vim-nox',
+            };
+
+        second_best_text_editor::
+            'additional_packages' slist => {
+                'emacs-nox',
+            };
+
+    methods:
+        'sophisticated_package_installer' usebundle => 'sophisticated_package_installer';
+}
+
+bundle agent sophisticated_package_installer
+# Really install packages
+{
+    packages:
+        '${install_base_packages.base_packages}'
+            package_policy => 'add',
+            package_method => default:generic;
+
+        '${install_base_packages.additional_packages}'
+            package_policy => 'add',
+            package_method => default:generic;
+}

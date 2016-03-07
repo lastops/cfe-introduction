@@ -1,0 +1,95 @@
+# User accounts setup
+body file control
+# Define namespace
+{
+    namespace => 'lastops';
+}
+
+bundle agent add_users
+# Set users
+{
+    vars:
+        # Users
+        'user_attr' data => '{
+            "egor": {
+                "description": "Egor M.",
+                "gid": 5000,
+                "group": "egor",
+                "groups_secondary": [ "adm", "sudo" ],
+                "home_dir": "/home/egor",
+                "password": "$6$jJgGkjTb$Yju1qS8plTuLA07U645EIjmQEVUQK6ov5fg0eaQTofF94f8CqY.0J2Qcx9NexCPAsIgjlOWSfmYkQPROJYK4C.",
+                "shell": "/bin/bash",
+                "skel": "/etc/skel/.",
+                "uid": 5000
+            }
+        }';
+
+        # Get user names
+        'users' slist => getindices('user_attr');
+
+    methods:
+        'handle_users' usebundle => handle_users('${users}', @{user_attr});
+}
+
+bundle agent handle_users(user, user_attr)
+# Add user accounts
+{
+    vars:
+        'user_group' string => format('%s', '${user_attr[${user}][group]}');
+        'gid' string => format('%s', '${user_attr[${user}][gid]}');
+        'uid' string => format('%s', '${user_attr[${user}][uid]}');
+        'groups_secondary' slist => getvalues('user_attr[${user}][groups_secondary]');
+
+    classes:
+        'group_${user_group}_exists' expression => groupexists('${user_group}');
+
+    methods:
+        'add_group_${user_group}' usebundle => add_group(${user_group}, ${gid}),
+            ifvarclass => not('group_${user_group}_exists');
+
+    users:
+        '${user}'
+            policy => 'present',
+            uid => '${uid}',
+            description => '${user_attr[${user}][description]}',
+            group_primary => ${user_group},
+            groups_secondary => { @{groups_secondary} },
+            shell => '${user_attr[${user}][shell]}',
+            home_dir => '${user_attr[${user}][home_dir]}',
+            home_bundle => home_skel('${user}', '${user_attr[${user}][skel]}'),
+            password => hashed_password('${user_attr[${user}][password]}'),
+            ifvarclass => 'group_${user_group}_exists';
+}
+
+bundle agent add_group(group, gid)
+# Add group
+{
+    commands:
+        '${default:paths.path[groupadd]}'
+            args => '-f -g ${gid} ${group}';
+}
+
+bundle agent home_skel(user, skel)
+# Create, seed and set perms for user home
+{
+    vars:
+        'user_home_dir' string => '/home/${user}/.';
+
+    files:
+        '${user_home_dir}'
+            create => 'true',
+            perms => default:mog('0750', '${user}', '${user}');
+
+        '${user_home_dir}'
+            copy_from => default:seed_cp(${skel}),
+            depth_search => default:recurse('inf'),
+            perms => default:mog('0640', '${user}', '${user}');
+}
+
+body password hashed_password(hash)
+# Provide hashed password
+{
+    format => 'hash';
+    data => '${hash}';
+}
+

@@ -1,0 +1,15 @@
+{
+    "classes": {
+      "cfengine_internal_purge_policies": "any"
+    },
+
+    "vars": {
+      "acl": [ "0.0.0.0/0" ],
+      "domain": "lastops.example",
+      "mailto": "devops@lastops.example",
+      "mailfrom": "cfe@lastops.example",
+      "smtpserver": "internal-mail-collector.lastops.example",
+      "trustkeysfrom": [ "" ]
+    }
+}
+
